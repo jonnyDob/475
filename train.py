@@ -39,14 +39,14 @@ cuda = sys.argv[cuda_idx + 1]
 device = torch.device(cuda)
 trainingMode = sys.argv[train_idx + 1]
 
-#sketchy code from lab 2 that is the core tenet of blessednet
+
 def train_transform():
     transform_list = [
-        transforms.Resize(size=(512, 512)),
+        # transforms.Resize(size=(512, 512)),
         transforms.ToTensor()
     ]
     return transforms.Compose(transform_list)
-#I Love SKIPP CONNECTIONS EVEN THOUGH NO ONE KNOWS WHY THEY WORK
+
 model = Resnet18()
 model.train()
 model.to(device=device)
@@ -57,13 +57,16 @@ train_dataset=custom_dataset(load_dataset, train_tf)
 optimizer=torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
 
+num_batches = int(len(train_dataset) / batch_size)
 
 train_loader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True)
+
 def train(model, train_loader, optimizer, scheduler, epochs, device=device):
     print("Training...")
     model.train()
     losses_train = []
     model.to(device=device)
+    i = 0
     for epoch in tqdm.tqdm(range(epochs)):
         loss_train = 0.0
 
@@ -74,6 +77,9 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
             labels_tensor = labels_tensor.to(device=device)
             # print("\n\n This is the shape of the imgs: \n")
             # print(imgs.shape)
+
+            i = i + 1
+            print(i)
             output = model(imgs)
             loss = model.lossFunction(output, labels_tensor)
 
