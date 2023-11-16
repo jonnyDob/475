@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, Subset
 #from custom_dataset import custom_dataset
 import torch.optim as optim
 import datetime as dt
+from torchvision.datasets import CIFAR10, CIFAR100
 from torchvision import transforms
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
