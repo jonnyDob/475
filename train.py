@@ -42,7 +42,7 @@ trainingMode = sys.argv[train_idx + 1]
 
 def train_transform():
     transform_list = [
-        # transforms.Resize(size=(512, 512)),
+        transforms.Resize(size=(150, 150)),
         transforms.ToTensor()
     ]
     return transforms.Compose(transform_list)
