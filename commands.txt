@@ -1,0 +1,1 @@
+python train.py -gamma 1 -e 30 -b 32 -l ./data/Kitti8_ROIs/train -s classifier.pth -p lossplot -train y -cuda cuda

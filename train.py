@@ -52,14 +52,18 @@ model.train()
 model.to(device=device)
 
 train_tf=train_transform()
-train_dataset=custom_dataset(load_dataset, train_tf)
+test_tf=train_transform()
+
+train_dataset = custom_dataset(load_dataset, train_tf)
+test_dataset = custom_dataset(load_dataset, test_tf)
+
+train_loader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True)
+testLoader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
 optimizer=torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
 
 num_batches = int(len(train_dataset) / batch_size)
-
-train_loader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True)
 
 def train(model, train_loader, optimizer, scheduler, epochs, device=device):
     print("Training...")
@@ -72,11 +76,17 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
 
         for imgs, labels in train_loader:
 
+            # TODO change the type for it to work back to , dtype=torch.int64 if needed
             imgs = imgs.to(device=device)
-            labels_tensor = torch.tensor(labels, dtype=torch.int64)
+            labels_tensor = torch.tensor(labels)
             labels_tensor = labels_tensor.to(device=device)
             # print("\n\n This is the shape of the imgs: \n")
             # print(imgs.shape)
+
+            # imgs.to(device=device)
+            # labels_tensor = torch.tensor(labels)
+            # labels_tensor.to(device=device)
+
 
             i = i + 1
             print(i)
@@ -93,7 +103,7 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
         losses_train += [loss_train / (num_batches)]
 
         print('Epoch {}, Training loss {}'.format(epoch, loss_train / (num_batches)))
-        state_dict = model.classifier.state_dict()
+        state_dict = model.state_dict()
         torch.save(state_dict, classifierFile)
 
     plt.plot(losses_train, label='Total Loss')
@@ -103,5 +113,33 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
 
     return losses_train
 
+
+def test(model, loader, device):
+    print("Testing...")
+    model.eval()
+    model.to(device=device)
+    accuracy = Accuracy(top_k=1, num_classes= 2, task='binary')
+
+    with torch.no_grad():
+
+        for imgs, labels in loader:
+
+            imgs = imgs.to(device=device)
+            labels_tensor = torch.tensor(labels)
+            labels_tensor = labels_tensor.to(device=device)
+
+            output = model.forward(imgs)
+            # output = model(imgs)
+
+            accuracy.update(output,labels_tensor)
+
+    theAccuracy = accuracy.compute()
+
+    print(f"Top-1 Accuracy: {theAccuracy.item() * 100:.2f}%")
+
 if trainingMode == 'y':
     train(model=model, train_loader = train_loader, optimizer=optimizer, scheduler=scheduler, epochs=epoch)
+else:
+    classifier_state_dict = torch.load(classifierFile)
+    model.load_state_dict(classifier_state_dict)
+    test(model = model, loader = testLoader, device = device)
