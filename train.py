@@ -6,6 +6,8 @@ import torch.nn as nn
 import sys
 import argparse
 import torchsummary
+import torchvision.models
+
 from custom_dataset import custom_dataset
 import tqdm
 import torch
@@ -47,9 +49,20 @@ def train_transform():
     ]
     return transforms.Compose(transform_list)
 
-model = Resnet18()
-model.train()
-model.to(device=device)
+# Creation of the model
+model = torchvision.models.resnet18(pretrained=True)
+model.fc = nn.Linear(model.fc.in_features, 1)
+
+lossFunction = nn.BCEWithLogitsLoss()
+
+
+
+# model.train()
+# model.to(device=device)
+
+
+
+
 
 train_tf=train_transform()
 test_tf=train_transform()
@@ -60,7 +73,7 @@ test_dataset = custom_dataset(load_dataset, test_tf)
 train_loader=DataLoader(train_dataset,batch_size=batch_size,shuffle=True)
 testLoader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-optimizer=torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer, gamma)
 
 num_batches = int(len(train_dataset) / batch_size)
@@ -78,8 +91,12 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
 
             # TODO change the type for it to work back to , dtype=torch.int64 if needed
             imgs = imgs.to(device=device)
-            labels_tensor = torch.tensor(labels)
-            labels_tensor = labels_tensor.to(device=device)
+            labels = torch.tensor(labels, dtype=torch.float32).to(device=device)
+
+
+            # labels = labels.to(device=device)
+            # labels_tensor = torch.tensor(labels)
+            # labels_tensor = labels_tensor.to(device=device)
             # print("\n\n This is the shape of the imgs: \n")
             # print(imgs.shape)
 
@@ -91,7 +108,15 @@ def train(model, train_loader, optimizer, scheduler, epochs, device=device):
             i = i + 1
             print(i)
             output = model(imgs)
-            loss = model.lossFunction(output, labels_tensor)
+            # print("\n\n This is the output: ")
+            # print(output)
+            # print("\n THIS IS THE END OF OUTPUT")
+            output = output.squeeze()
+            # print("\n\n This is the output AFTER: ")
+            # print(output)
+            # print("\n THIS IS THE END OF OUTPUT AFTER")
+            # labels.float()
+            loss = lossFunction(output, labels)
 
             optimizer.zero_grad()
             loss.backward()
@@ -118,10 +143,10 @@ def test(model, loader, device):
     print("Testing...")
     model.eval()
     model.to(device=device)
-    accuracy = Accuracy(top_k=1, num_classes= 2, task='binary')
+    accuracy = Accuracy(top_k=1, num_classes= 2, task='binary').to(device=device)
 
     with torch.no_grad():
-
+        i=0
         for imgs, labels in loader:
 
             imgs = imgs.to(device=device)
@@ -129,7 +154,12 @@ def test(model, loader, device):
             labels_tensor = labels_tensor.to(device=device)
 
             output = model.forward(imgs)
+            output=output.squeeze()
             # output = model(imgs)
+
+            print(i)
+            i=i+1
+
 
             accuracy.update(output,labels_tensor)
 
